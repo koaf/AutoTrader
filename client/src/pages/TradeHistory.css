@@ -1,0 +1,191 @@
+.trade-history {
+  max-width: 1400px;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+  flex-wrap: wrap;
+  gap: 15px;
+}
+
+.page-header h1 {
+  font-size: 1.8rem;
+  font-weight: 600;
+}
+
+.header-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.filter-select {
+  padding: 10px 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  color: var(--text-primary);
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+
+.filter-select:focus {
+  outline: none;
+  border-color: var(--primary-color);
+}
+
+.export-btn {
+  padding: 10px 20px;
+  background: var(--primary-color);
+  border: none;
+  border-radius: 8px;
+  color: #000;
+  font-weight: 500;
+  transition: background 0.2s;
+}
+
+.export-btn:hover {
+  background: var(--primary-hover);
+}
+
+/* Table */
+.table-wrapper {
+  overflow-x: auto;
+  margin-bottom: 20px;
+}
+
+.trades-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--bg-card);
+  border-radius: 12px;
+  overflow: hidden;
+  min-width: 900px;
+}
+
+.trades-table th,
+.trades-table td {
+  padding: 14px 16px;
+  text-align: left;
+}
+
+.trades-table th {
+  background: var(--bg-secondary);
+  font-weight: 500;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
+.trades-table td {
+  border-bottom: 1px solid var(--border-color);
+  font-family: monospace;
+  font-size: 0.9rem;
+}
+
+.trades-table tr:last-child td {
+  border-bottom: none;
+}
+
+.trades-table .date {
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.trades-table .symbol {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.trades-table .buy {
+  color: var(--secondary-color);
+  font-weight: 500;
+}
+
+.trades-table .sell {
+  color: var(--danger-color);
+  font-weight: 500;
+}
+
+.trades-table .profit {
+  color: var(--secondary-color);
+}
+
+.trades-table .loss {
+  color: var(--danger-color);
+}
+
+.status {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.status.filled {
+  background: rgba(22, 199, 132, 0.2);
+  color: var(--secondary-color);
+}
+
+.status.pending {
+  background: rgba(240, 185, 11, 0.2);
+  color: var(--warning-color);
+}
+
+.status.cancelled,
+.status.rejected {
+  background: rgba(234, 57, 67, 0.2);
+  color: var(--danger-color);
+}
+
+/* Pagination */
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 20px;
+}
+
+.pagination button {
+  padding: 10px 20px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  color: var(--text-primary);
+  transition: all 0.2s;
+}
+
+.pagination button:hover:not(:disabled) {
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+}
+
+.pagination button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.page-info {
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+}
+
+/* Empty & Loading */
+.empty-message {
+  background: var(--bg-card);
+  padding: 60px;
+  text-align: center;
+  border-radius: 12px;
+  color: var(--text-secondary);
+}
+
+.page-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 200px;
+  color: var(--text-secondary);
+}

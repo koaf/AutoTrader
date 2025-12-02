@@ -3,6 +3,7 @@ const jwt = require('jsonwebtoken');
 const { body, validationResult } = require('express-validator');
 const { User, SystemLog } = require('../models');
 const { auth } = require('../middleware/auth');
+const licenseService = require('../services/licenseService');
 
 const router = express.Router();
 
@@ -30,6 +31,10 @@ router.post('/register', [
     const user = new User({ email, password, username });
     await user.save();
 
+    // スプレッドシートにユーザー登録を通知
+    const licenseResult = await licenseService.registerUser(user);
+    console.log('License registration result:', licenseResult);
+
     // JWTトークン生成
     const token = jwt.sign(
       { userId: user._id },
@@ -47,13 +52,14 @@ router.post('/register', [
     });
 
     res.status(201).json({
-      message: '登録が完了しました',
+      message: '登録が完了しました。管理者の承認をお待ちください。',
       token,
       user: {
         id: user._id,
         email: user.email,
         username: user.username,
-        role: user.role
+        role: user.role,
+        licenseStatus: user.licenseStatus
       }
     });
   } catch (error) {
@@ -92,6 +98,21 @@ router.post('/login', [
       return res.status(403).json({ message: 'アカウントが無効化されています' });
     }
 
+    // ライセンス状態をスプレッドシートから確認・同期
+    const licenseCheck = await licenseService.checkLicense(user.email);
+    if (licenseCheck.success && !licenseCheck.skipped) {
+      if (licenseCheck.licenseStatus) {
+        if (user.licenseStatus !== 'active') {
+          user.licenseStatus = 'active';
+          user.licenseApprovedAt = licenseCheck.approvedAt ? new Date(licenseCheck.approvedAt) : new Date();
+        }
+      } else {
+        if (user.licenseStatus === 'active') {
+          user.licenseStatus = 'revoked';
+        }
+      }
+    }
+
     // 最終ログイン更新
     user.lastLogin = new Date();
     await user.save();
@@ -119,11 +140,44 @@ router.post('/login', [
         id: user._id,
         email: user.email,
         username: user.username,
-        role: user.role
+        role: user.role,
+        licenseStatus: user.licenseStatus
       }
     });
   } catch (error) {
     console.error('Login error:', error);
+    res.status(500).json({ message: 'サーバーエラーが発生しました' });
+  }
+});
+
+// ライセンス状態確認
+router.get('/license', auth, async (req, res) => {
+  try {
+    // スプレッドシートから最新の状態を取得
+    const licenseCheck = await licenseService.checkLicense(req.user.email);
+    
+    let licenseStatus = req.user.licenseStatus;
+    
+    if (licenseCheck.success && !licenseCheck.skipped) {
+      if (licenseCheck.licenseStatus && req.user.licenseStatus !== 'active') {
+        req.user.licenseStatus = 'active';
+        req.user.licenseApprovedAt = licenseCheck.approvedAt ? new Date(licenseCheck.approvedAt) : new Date();
+        await req.user.save();
+        licenseStatus = 'active';
+      } else if (!licenseCheck.licenseStatus && req.user.licenseStatus === 'active') {
+        req.user.licenseStatus = 'revoked';
+        await req.user.save();
+        licenseStatus = 'revoked';
+      }
+    }
+
+    res.json({
+      licenseStatus,
+      licenseApprovedAt: req.user.licenseApprovedAt,
+      isLicensed: licenseStatus === 'active'
+    });
+  } catch (error) {
+    console.error('License check error:', error);
     res.status(500).json({ message: 'サーバーエラーが発生しました' });
   }
 });
@@ -139,6 +193,8 @@ router.get('/me', auth, async (req, res) => {
         role: req.user.role,
         tradingEnabled: req.user.tradingEnabled,
         enabledCurrencies: req.user.enabledCurrencies,
+        licenseStatus: req.user.licenseStatus,
+        licenseApprovedAt: req.user.licenseApprovedAt,
         createdAt: req.user.createdAt,
         lastLogin: req.user.lastLogin
       }

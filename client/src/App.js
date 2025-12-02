@@ -13,6 +13,7 @@ import TradeHistory from './pages/TradeHistory';
 import AssetHistory from './pages/AssetHistory';
 import Currencies from './pages/Currencies';
 import Account from './pages/Account';
+import LicensePending from './pages/LicensePending';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminUsers from './pages/admin/AdminUsers';
 import AdminUserDetail from './pages/admin/AdminUserDetail';
@@ -22,15 +23,24 @@ import AdminLogs from './pages/admin/AdminLogs';
 import Layout from './components/Layout';
 import AdminLayout from './components/AdminLayout';
 
-// 認証が必要なルート
+// 認証が必要なルート（ライセンスチェック付き）
 const PrivateRoute = ({ children }) => {
-  const { user, loading } = useAuth();
+  const { user, loading, isLicensed } = useAuth();
   
   if (loading) {
     return <div className="loading-screen">読み込み中...</div>;
   }
   
-  return user ? children : <Navigate to="/login" />;
+  if (!user) {
+    return <Navigate to="/login" />;
+  }
+  
+  // ライセンスが無効な場合は待機画面を表示
+  if (!isLicensed()) {
+    return <LicensePending />;
+  }
+  
+  return children;
 };
 
 // 管理者専用ルート

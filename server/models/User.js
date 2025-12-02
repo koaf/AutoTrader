@@ -32,6 +32,14 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  licenseStatus: {
+    type: String,
+    enum: ['pending', 'active', 'revoked'],
+    default: 'pending'
+  },
+  licenseApprovedAt: {
+    type: Date
+  },
   enabledCurrencies: [{
     symbol: String,
     enabled: Boolean,

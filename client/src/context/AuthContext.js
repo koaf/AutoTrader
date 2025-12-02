@@ -59,8 +59,39 @@ export const AuthProvider = ({ children }) => {
     setUser(prev => ({ ...prev, ...userData }));
   };
 
+  const checkLicense = async () => {
+    try {
+      const response = await api.get('/auth/license');
+      if (response.data.licenseStatus) {
+        setUser(prev => ({ 
+          ...prev, 
+          licenseStatus: response.data.licenseStatus,
+          licenseApprovedAt: response.data.licenseApprovedAt
+        }));
+      }
+      return response.data;
+    } catch (error) {
+      console.error('License check error:', error);
+      return { isLicensed: false };
+    }
+  };
+
+  const isLicensed = () => {
+    return user?.licenseStatus === 'active' || user?.role === 'admin';
+  };
+
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout, updateUser, fetchUser }}>
+    <AuthContext.Provider value={{ 
+      user, 
+      loading, 
+      login, 
+      register, 
+      logout, 
+      updateUser, 
+      fetchUser,
+      checkLicense,
+      isLicensed
+    }}>
       {children}
     </AuthContext.Provider>
   );

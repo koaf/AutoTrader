@@ -19,6 +19,20 @@ const AVAILABLE_CURRENCIES = {
     { symbol: 'BNB', name: 'BNB', tradingSymbol: 'BNBUSDT' },
     { symbol: 'XRP', name: 'Ripple', tradingSymbol: 'XRPUSDT' },
     { symbol: 'SOL', name: 'Solana', tradingSymbol: 'SOLUSDT' }
+  ],
+  okx: [
+    { symbol: 'BTC', name: 'Bitcoin', tradingSymbol: 'BTC-USDT-SWAP' },
+    { symbol: 'ETH', name: 'Ethereum', tradingSymbol: 'ETH-USDT-SWAP' },
+    { symbol: 'SOL', name: 'Solana', tradingSymbol: 'SOL-USDT-SWAP' },
+    { symbol: 'XRP', name: 'Ripple', tradingSymbol: 'XRP-USDT-SWAP' },
+    { symbol: 'DOGE', name: 'Dogecoin', tradingSymbol: 'DOGE-USDT-SWAP' }
+  ],
+  gateio: [
+    { symbol: 'BTC', name: 'Bitcoin', tradingSymbol: 'BTC_USDT' },
+    { symbol: 'ETH', name: 'Ethereum', tradingSymbol: 'ETH_USDT' },
+    { symbol: 'SOL', name: 'Solana', tradingSymbol: 'SOL_USDT' },
+    { symbol: 'XRP', name: 'Ripple', tradingSymbol: 'XRP_USDT' },
+    { symbol: 'DOGE', name: 'Dogecoin', tradingSymbol: 'DOGE_USDT' }
   ]
 };
 

@@ -62,12 +62,12 @@
 |--------|--------|-------------|---------|
 | **Bybit** | CEX | ✅ | インバース無期限契約 |
 | **Binance** | CEX | ✅ | USDS-M Futures |
+| **OKX** | CEX | ✅ | Perpetual Swap、パスフレーズ認証 |
 
 ### 実装予定（CEX）
 
 | 取引所 | タイプ | テストネット | 特記事項 |
 |--------|--------|-------------|---------|
-| **OKX** | CEX | ✅ | パスフレーズ認証が必要 |
 | **Gate.io** | CEX | ✅ | USDT Perpetual |
 
 ### 実装予定（DEX）
@@ -498,6 +498,8 @@ db.users.updateOne(
 |--------|---------|
 | Bybit | BTC, ETH, XRP, EOS |
 | Binance | BTC, ETH, BNB, XRP, SOL |
+| OKX | BTC, ETH, SOL, XRP, DOGE |
+| Gate.io | BTC, ETH, SOL, XRP, DOGE |
 
 #### 複利設定
 
@@ -1015,6 +1017,8 @@ AutoTrader/
 │   ├── services/
 │   │   ├── bybitClient.js    # Bybit APIクライアント
 │   │   ├── binanceClient.js  # Binance Futures APIクライアント
+│   │   ├── okxClient.js      # OKX Perpetual Swap APIクライアント
+│   │   ├── gateioClient.js   # Gate.io USDT Perpetual APIクライアント
 │   │   ├── exchangeFactory.js # 取引所クライアントファクトリー
 │   │   └── tradingScheduler.js # 自動取引スケジューラー
 │   ├── middleware/
@@ -1092,6 +1096,8 @@ MIT License
 | 1.0.0 | 2024-12-01 | 初回リリース（Bybit対応） |
 | 1.1.0 | 2024-12-02 | ライセンスシステム対応 |
 | 2.0.0 | 2024-12-02 | マルチ取引所対応（Binance追加） |
+| 2.1.0 | 2024-12-03 | OKX対応追加 |
+| 2.2.0 | 2024-12-03 | Gate.io対応追加 |
 ---
 
 **⚠️ 免責事項**: 本システムは投資助言を目的としたものではありません。暗号資産取引には大きなリスクが伴います。投資判断は自己責任で行ってください。

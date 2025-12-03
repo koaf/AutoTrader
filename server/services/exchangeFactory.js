@@ -5,9 +5,9 @@
 
 const BybitClient = require('./bybitClient');
 const BinanceClient = require('./binanceClient');
+const OkxClient = require('./okxClient');
+const GateioClient = require('./gateioClient');
 // 将来追加予定
-// const OkxClient = require('./okxClient');
-// const GateioClient = require('./gateioClient');
 // const AsterClient = require('./asterClient');
 // const HyperliquidClient = require('./hyperliquidClient');
 // const EdgexClient = require('./edgexClient');
@@ -34,7 +34,7 @@ const EXCHANGE_CONFIG = {
   },
   okx: {
     name: 'OKX',
-    client: null, // 未実装
+    client: OkxClient,
     hasTestnet: true,
     needsPassphrase: true,
     needsWalletAddress: false,
@@ -43,7 +43,7 @@ const EXCHANGE_CONFIG = {
   },
   gateio: {
     name: 'Gate.io',
-    client: null, // 未実装
+    client: GateioClient,
     hasTestnet: true,
     needsPassphrase: false,
     needsWalletAddress: false,
@@ -113,12 +113,10 @@ class ExchangeFactory {
         return new BinanceClient(apiKey, apiSecret, isTestnet);
       
       case 'okx':
-        // return new OkxClient(apiKey, apiSecret, passphrase, isTestnet);
-        throw new Error('OKX client not implemented yet');
+        return new OkxClient(apiKey, apiSecret, passphrase, isTestnet);
       
       case 'gateio':
-        // return new GateioClient(apiKey, apiSecret, isTestnet);
-        throw new Error('Gate.io client not implemented yet');
+        return new GateioClient(apiKey, apiSecret, isTestnet);
       
       case 'aster':
         // return new AsterClient(apiKey, apiSecret, walletAddress);

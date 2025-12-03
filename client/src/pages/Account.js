@@ -16,12 +16,15 @@ const Account = () => {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   
-  // API Key
+  // API Key (マルチ取引所対応)
+  const [exchanges, setExchanges] = useState([]);
+  const [selectedExchange, setSelectedExchange] = useState('bybit');
   const [apiKey, setApiKey] = useState('');
   const [apiSecret, setApiSecret] = useState('');
+  const [passphrase, setPassphrase] = useState('');
+  const [walletAddress, setWalletAddress] = useState('');
   const [isTestnet, setIsTestnet] = useState(false);
-  const [hasApiKey, setHasApiKey] = useState(false);
-  const [apiKeyInfo, setApiKeyInfo] = useState(null);
+  const [registeredApiKeys, setRegisteredApiKeys] = useState([]);
   
   const [loading, setLoading] = useState(false);
 
@@ -29,19 +32,30 @@ const Account = () => {
     if (user) {
       setUsername(user.username);
     }
-    checkApiKey();
+    fetchExchanges();
+    checkApiKeys();
   }, [user]);
 
-  const checkApiKey = async () => {
+  const fetchExchanges = async () => {
+    try {
+      const response = await api.get('/apikey/exchanges?implemented=true');
+      setExchanges(response.data.exchanges || []);
+    } catch (error) {
+      console.error('Fetch exchanges error:', error);
+    }
+  };
+
+  const checkApiKeys = async () => {
     try {
       const response = await api.get('/apikey');
-      setHasApiKey(response.data.hasApiKey);
-      if (response.data.hasApiKey) {
-        setApiKeyInfo(response.data.apiKey);
-      }
+      setRegisteredApiKeys(response.data.apiKeys || []);
     } catch (error) {
       console.error('API key check error:', error);
     }
+  };
+
+  const getSelectedExchangeConfig = () => {
+    return exchanges.find(e => e.id === selectedExchange) || {};
   };
 
   const handleProfileUpdate = async (e) => {
@@ -82,11 +96,29 @@ const Account = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      await api.post('/apikey', { apiKey, apiSecret, isTestnet });
-      toast.success('APIキーを登録しました');
+      const payload = { 
+        exchange: selectedExchange,
+        apiKey, 
+        apiSecret, 
+        isTestnet 
+      };
+      
+      // 取引所固有のフィールドを追加
+      const config = getSelectedExchangeConfig();
+      if (config.needsPassphrase && passphrase) {
+        payload.passphrase = passphrase;
+      }
+      if (config.needsWalletAddress && walletAddress) {
+        payload.walletAddress = walletAddress;
+      }
+      
+      await api.post('/apikey', payload);
+      toast.success(`${config.name || selectedExchange}のAPIキーを登録しました`);
       setApiKey('');
       setApiSecret('');
-      checkApiKey();
+      setPassphrase('');
+      setWalletAddress('');
+      checkApiKeys();
     } catch (error) {
       toast.error(error.response?.data?.message || '登録に失敗しました');
     } finally {
@@ -94,15 +126,16 @@ const Account = () => {
     }
   };
 
-  const handleApiKeyDelete = async () => {
-    if (!window.confirm('APIキーを削除しますか？自動取引も停止されます。')) return;
+  const handleApiKeyDelete = async (exchange) => {
+    const exchangeConfig = exchanges.find(e => e.id === exchange);
+    const exchangeName = exchangeConfig?.name || exchange;
+    
+    if (!window.confirm(`${exchangeName}のAPIキーを削除しますか？`)) return;
     setLoading(true);
     try {
-      await api.delete('/apikey');
-      toast.success('APIキーを削除しました');
-      setHasApiKey(false);
-      setApiKeyInfo(null);
-      updateUser({ tradingEnabled: false });
+      await api.delete(`/apikey/${exchange}`);
+      toast.success(`${exchangeName}のAPIキーを削除しました`);
+      checkApiKeys();
     } catch (error) {
       toast.error(error.response?.data?.message || '削除に失敗しました');
     } finally {
@@ -110,22 +143,29 @@ const Account = () => {
     }
   };
 
-  const handleApiKeyValidate = async () => {
+  const handleApiKeyValidate = async (exchange = null) => {
     setLoading(true);
     try {
-      const response = await api.post('/apikey/validate');
-      if (response.data.isValid) {
-        toast.success('APIキーは有効です');
-      } else {
-        toast.warning('APIキーが無効です。再登録してください。');
-      }
-      checkApiKey();
+      const response = await api.post('/apikey/validate', { exchange });
+      const results = response.data.results || [];
+      
+      results.forEach(result => {
+        if (result.isValid) {
+          toast.success(`${result.exchange}: APIキーは有効です`);
+        } else {
+          toast.warning(`${result.exchange}: ${result.message}`);
+        }
+      });
+      
+      checkApiKeys();
     } catch (error) {
       toast.error(error.response?.data?.message || '検証に失敗しました');
     } finally {
       setLoading(false);
     }
   };
+
+  const config = getSelectedExchangeConfig();
 
   return (
     <div className="account">
@@ -240,98 +280,154 @@ const Account = () => {
         {/* API Key Tab */}
         {activeTab === 'apikey' && (
           <div className="account-form">
-            <h2>Bybit APIキー設定</h2>
+            <h2>取引所API設定</h2>
 
-            {hasApiKey ? (
-              <div className="apikey-status">
-                <div className="status-card">
-                  <div className="status-header">
-                    <span className="status-icon">🔑</span>
-                    <span className="status-text">APIキー登録済み</span>
-                  </div>
-                  <div className="status-body">
-                    <div className="status-row">
-                      <span className="label">環境</span>
-                      <span className="value">{apiKeyInfo?.isTestnet ? 'テストネット' : '本番環境'}</span>
-                    </div>
-                    <div className="status-row">
-                      <span className="label">ステータス</span>
-                      <span className={`value ${apiKeyInfo?.isValid ? 'valid' : 'invalid'}`}>
-                        {apiKeyInfo?.isValid ? '有効' : '無効'}
-                      </span>
-                    </div>
-                    <div className="status-row">
-                      <span className="label">登録日</span>
-                      <span className="value">
-                        {apiKeyInfo?.createdAt ? new Date(apiKeyInfo.createdAt).toLocaleDateString('ja-JP') : '-'}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="status-actions">
-                    <button className="validate-btn" onClick={handleApiKeyValidate} disabled={loading}>
-                      検証
-                    </button>
-                    <button className="delete-btn" onClick={handleApiKeyDelete} disabled={loading}>
-                      削除
-                    </button>
-                  </div>
+            {/* 登録済みAPIキー一覧 */}
+            {registeredApiKeys.length > 0 && (
+              <div className="registered-apikeys">
+                <h3>登録済み取引所</h3>
+                <div className="apikey-list">
+                  {registeredApiKeys.map(key => {
+                    const exchangeConfig = exchanges.find(e => e.id === key.exchange);
+                    return (
+                      <div key={key.id} className="apikey-card">
+                        <div className="apikey-header">
+                          <span className="exchange-name">{exchangeConfig?.name || key.exchange}</span>
+                          <span className={`status-badge ${key.isValid ? 'valid' : 'invalid'}`}>
+                            {key.isValid ? '有効' : '無効'}
+                          </span>
+                        </div>
+                        <div className="apikey-body">
+                          <span className="env-badge">{key.isTestnet ? 'テストネット' : '本番環境'}</span>
+                          <span className="date">
+                            登録: {new Date(key.createdAt).toLocaleDateString('ja-JP')}
+                          </span>
+                        </div>
+                        <div className="apikey-actions">
+                          <button 
+                            className="validate-btn" 
+                            onClick={() => handleApiKeyValidate(key.exchange)} 
+                            disabled={loading}
+                          >
+                            検証
+                          </button>
+                          <button 
+                            className="delete-btn" 
+                            onClick={() => handleApiKeyDelete(key.exchange)} 
+                            disabled={loading}
+                          >
+                            削除
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
-                
-                <div className="reregister-section">
-                  <h3>APIキーを再登録</h3>
-                  <p>新しいAPIキーで上書き登録できます。</p>
-                </div>
-              </div>
-            ) : (
-              <div className="apikey-notice">
-                <p>取引を開始するには、BybitのAPIキーを登録してください。</p>
-                <p className="notice-detail">
-                  ※ APIキーには「Trade」権限が必要です。<br />
-                  ※ APIキーは暗号化して保存されます。
-                </p>
               </div>
             )}
 
-            <form onSubmit={handleApiKeyRegister}>
-              <div className="form-group">
-                <label htmlFor="apiKey">APIキー</label>
-                <input
-                  type="text"
-                  id="apiKey"
-                  value={apiKey}
-                  onChange={(e) => setApiKey(e.target.value)}
-                  placeholder="Bybit APIキーを入力"
-                  required
-                />
-              </div>
+            {/* 新規APIキー登録フォーム */}
+            <div className="new-apikey-section">
+              <h3>{registeredApiKeys.length > 0 ? '新しい取引所を追加' : 'APIキーを登録'}</h3>
+              
+              <form onSubmit={handleApiKeyRegister}>
+                <div className="form-group">
+                  <label htmlFor="exchange">取引所</label>
+                  <select
+                    id="exchange"
+                    value={selectedExchange}
+                    onChange={(e) => setSelectedExchange(e.target.value)}
+                    required
+                  >
+                    {exchanges.map(ex => (
+                      <option key={ex.id} value={ex.id}>
+                        {ex.name} - {ex.description}
+                      </option>
+                    ))}
+                  </select>
+                </div>
 
-              <div className="form-group">
-                <label htmlFor="apiSecret">APIシークレット</label>
-                <input
-                  type="password"
-                  id="apiSecret"
-                  value={apiSecret}
-                  onChange={(e) => setApiSecret(e.target.value)}
-                  placeholder="Bybit APIシークレットを入力"
-                  required
-                />
-              </div>
-
-              <div className="form-group checkbox-group">
-                <label className="checkbox-label">
+                <div className="form-group">
+                  <label htmlFor="apiKey">APIキー</label>
                   <input
-                    type="checkbox"
-                    checked={isTestnet}
-                    onChange={(e) => setIsTestnet(e.target.checked)}
+                    type="text"
+                    id="apiKey"
+                    value={apiKey}
+                    onChange={(e) => setApiKey(e.target.value)}
+                    placeholder={`${config.name || selectedExchange} APIキーを入力`}
+                    required
                   />
-                  <span>テストネット環境を使用</span>
-                </label>
-              </div>
+                </div>
 
-              <button type="submit" className="submit-btn" disabled={loading}>
-                {loading ? '登録中...' : 'APIキーを登録'}
-              </button>
-            </form>
+                <div className="form-group">
+                  <label htmlFor="apiSecret">APIシークレット</label>
+                  <input
+                    type="password"
+                    id="apiSecret"
+                    value={apiSecret}
+                    onChange={(e) => setApiSecret(e.target.value)}
+                    placeholder={`${config.name || selectedExchange} APIシークレットを入力`}
+                    required
+                  />
+                </div>
+
+                {/* OKX用パスフレーズ */}
+                {config.needsPassphrase && (
+                  <div className="form-group">
+                    <label htmlFor="passphrase">パスフレーズ</label>
+                    <input
+                      type="password"
+                      id="passphrase"
+                      value={passphrase}
+                      onChange={(e) => setPassphrase(e.target.value)}
+                      placeholder="APIパスフレーズを入力"
+                      required
+                    />
+                  </div>
+                )}
+
+                {/* DEX用ウォレットアドレス */}
+                {config.needsWalletAddress && (
+                  <div className="form-group">
+                    <label htmlFor="walletAddress">ウォレットアドレス</label>
+                    <input
+                      type="text"
+                      id="walletAddress"
+                      value={walletAddress}
+                      onChange={(e) => setWalletAddress(e.target.value)}
+                      placeholder="0x..."
+                      required
+                    />
+                  </div>
+                )}
+
+                {/* テストネット選択（対応取引所のみ） */}
+                {config.hasTestnet && (
+                  <div className="form-group checkbox-group">
+                    <label className="checkbox-label">
+                      <input
+                        type="checkbox"
+                        checked={isTestnet}
+                        onChange={(e) => setIsTestnet(e.target.checked)}
+                      />
+                      <span>テストネット環境を使用</span>
+                    </label>
+                  </div>
+                )}
+
+                <div className="form-notice">
+                  <p>※ APIキーには「Trade」権限が必要です。</p>
+                  <p>※ APIキーは暗号化して保存されます。</p>
+                  {config.category === 'dex' && (
+                    <p>※ DEXではWeb3署名が使用されます。</p>
+                  )}
+                </div>
+
+                <button type="submit" className="submit-btn" disabled={loading}>
+                  {loading ? '登録中...' : 'APIキーを登録'}
+                </button>
+              </form>
+            </div>
           </div>
         )}
       </div>

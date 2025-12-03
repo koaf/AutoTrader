@@ -1,34 +1,76 @@
 const express = require('express');
 const { ApiKey, TradeHistory, Position, AssetHistory, SystemLog } = require('../models');
 const { auth } = require('../middleware/auth');
-const BybitClient = require('../services/bybitClient');
+const ExchangeFactory = require('../services/exchangeFactory');
 
 const router = express.Router();
 
-// 取引可能通貨一覧（インバース無期限）
-const AVAILABLE_CURRENCIES = [
-  { symbol: 'BTC', name: 'Bitcoin', inverseSymbol: 'BTCUSD' },
-  { symbol: 'ETH', name: 'Ethereum', inverseSymbol: 'ETHUSD' },
-  { symbol: 'EOS', name: 'EOS', inverseSymbol: 'EOSUSD' },
-  { symbol: 'XRP', name: 'Ripple', inverseSymbol: 'XRPUSD' }
-];
+// 取引可能通貨一覧（取引所ごと）
+const AVAILABLE_CURRENCIES = {
+  bybit: [
+    { symbol: 'BTC', name: 'Bitcoin', tradingSymbol: 'BTCUSD' },
+    { symbol: 'ETH', name: 'Ethereum', tradingSymbol: 'ETHUSD' },
+    { symbol: 'EOS', name: 'EOS', tradingSymbol: 'EOSUSD' },
+    { symbol: 'XRP', name: 'Ripple', tradingSymbol: 'XRPUSD' }
+  ],
+  binance: [
+    { symbol: 'BTC', name: 'Bitcoin', tradingSymbol: 'BTCUSDT' },
+    { symbol: 'ETH', name: 'Ethereum', tradingSymbol: 'ETHUSDT' },
+    { symbol: 'BNB', name: 'BNB', tradingSymbol: 'BNBUSDT' },
+    { symbol: 'XRP', name: 'Ripple', tradingSymbol: 'XRPUSDT' },
+    { symbol: 'SOL', name: 'Solana', tradingSymbol: 'SOLUSDT' }
+  ]
+};
 
-// Bybitクライアント取得ヘルパー
-async function getBybitClient(userId) {
-  const apiKeyDoc = await ApiKey.findOne({ userId, isValid: true });
+// 取引所クライアント取得ヘルパー（単一または複数）
+async function getExchangeClient(userId, exchange = null) {
+  const query = { userId, isValid: true };
+  if (exchange) {
+    query.exchange = exchange;
+  }
+  
+  const apiKeyDoc = await ApiKey.findOne(query);
   if (!apiKeyDoc) {
+    throw new Error(exchange ? `${exchange}のAPIキーが登録されていません` : 'APIキーが登録されていません');
+  }
+  
+  return {
+    client: ExchangeFactory.createClientFromApiKey(apiKeyDoc),
+    exchange: apiKeyDoc.exchange,
+    isTestnet: apiKeyDoc.isTestnet
+  };
+}
+
+// 全登録済み取引所のクライアント取得
+async function getAllExchangeClients(userId) {
+  const apiKeyDocs = await ApiKey.find({ userId, isValid: true });
+  if (apiKeyDocs.length === 0) {
     throw new Error('APIキーが登録されていません');
   }
-  return new BybitClient(
-    apiKeyDoc.decryptApiKey(),
-    apiKeyDoc.decryptApiSecret(),
-    apiKeyDoc.isTestnet
-  );
+  
+  return apiKeyDocs.map(doc => ({
+    client: ExchangeFactory.createClientFromApiKey(doc),
+    exchange: doc.exchange,
+    isTestnet: doc.isTestnet
+  }));
 }
 
 // 利用可能通貨一覧取得
-router.get('/currencies', auth, (req, res) => {
-  res.json({ currencies: AVAILABLE_CURRENCIES });
+router.get('/currencies', auth, async (req, res) => {
+  try {
+    const { exchange } = req.query;
+    
+    if (exchange) {
+      const currencies = AVAILABLE_CURRENCIES[exchange] || [];
+      return res.json({ exchange, currencies });
+    }
+    
+    // 全取引所の通貨を返す
+    res.json({ currencies: AVAILABLE_CURRENCIES });
+  } catch (error) {
+    console.error('Get currencies error:', error);
+    res.status(500).json({ message: 'サーバーエラーが発生しました' });
+  }
 });
 
 // ユーザーの有効通貨設定
@@ -59,10 +101,13 @@ router.post('/currencies', auth, async (req, res) => {
 // 取引ステータス切替
 router.post('/toggle', auth, async (req, res) => {
   try {
-    const { enabled } = req.body;
+    const { enabled, exchange } = req.body;
 
     // APIキー確認
-    const apiKeyDoc = await ApiKey.findOne({ userId: req.user._id, isValid: true });
+    const query = { userId: req.user._id, isValid: true };
+    if (exchange) query.exchange = exchange;
+    
+    const apiKeyDoc = await ApiKey.findOne(query);
     if (!apiKeyDoc && enabled) {
       return res.status(400).json({ message: '取引を有効にするにはAPIキーを登録してください' });
     }
@@ -74,7 +119,7 @@ router.post('/toggle', auth, async (req, res) => {
       userId: req.user._id,
       type: 'info',
       category: 'trade',
-      message: `Trading ${enabled ? 'enabled' : 'disabled'}`
+      message: `Trading ${enabled ? 'enabled' : 'disabled'}${exchange ? ` for ${exchange}` : ''}`
     });
 
     res.json({
@@ -90,24 +135,66 @@ router.post('/toggle', auth, async (req, res) => {
 // ウォレット残高取得
 router.get('/wallet', auth, async (req, res) => {
   try {
-    const client = await getBybitClient(req.user._id);
-    const response = await client.getWalletBalance();
+    const { exchange } = req.query;
+    
+    // 特定取引所または全取引所
+    if (exchange) {
+      const { client, exchange: ex, isTestnet } = await getExchangeClient(req.user._id, exchange);
+      const response = await client.getWalletBalance();
 
-    if (response.retCode !== 0) {
-      return res.status(400).json({ message: response.retMsg });
+      if (response.retCode !== 0) {
+        return res.status(400).json({ message: response.retMsg });
+      }
+
+      const coins = response.result?.list?.[0]?.coin || [];
+      const walletData = coins.map(coin => ({
+        currency: coin.coin,
+        walletBalance: parseFloat(coin.walletBalance || 0),
+        availableBalance: parseFloat(coin.availableToWithdraw || coin.availableBalance || 0),
+        usedMargin: parseFloat(coin.totalPositionIM || coin.usedMargin || 0),
+        unrealizedPnl: parseFloat(coin.unrealisedPnl || coin.unrealizedPnl || 0),
+        totalEquity: parseFloat(coin.equity || coin.walletBalance || 0)
+      }));
+
+      return res.json({ 
+        exchange: ex, 
+        isTestnet,
+        wallet: walletData 
+      });
     }
 
-    const coins = response.result?.list?.[0]?.coin || [];
-    const walletData = coins.map(coin => ({
-      currency: coin.coin,
-      walletBalance: parseFloat(coin.walletBalance || 0),
-      availableBalance: parseFloat(coin.availableToWithdraw || 0),
-      usedMargin: parseFloat(coin.totalPositionIM || 0),
-      unrealizedPnl: parseFloat(coin.unrealisedPnl || 0),
-      totalEquity: parseFloat(coin.equity || coin.walletBalance || 0)
-    }));
+    // 全取引所の残高を取得
+    const clients = await getAllExchangeClients(req.user._id);
+    const results = [];
 
-    res.json({ wallet: walletData });
+    for (const { client, exchange: ex, isTestnet } of clients) {
+      try {
+        const response = await client.getWalletBalance();
+        if (response.retCode === 0) {
+          const coins = response.result?.list?.[0]?.coin || [];
+          results.push({
+            exchange: ex,
+            isTestnet,
+            wallet: coins.map(coin => ({
+              currency: coin.coin,
+              walletBalance: parseFloat(coin.walletBalance || 0),
+              availableBalance: parseFloat(coin.availableToWithdraw || coin.availableBalance || 0),
+              usedMargin: parseFloat(coin.totalPositionIM || coin.usedMargin || 0),
+              unrealizedPnl: parseFloat(coin.unrealisedPnl || coin.unrealizedPnl || 0),
+              totalEquity: parseFloat(coin.equity || coin.walletBalance || 0)
+            }))
+          });
+        }
+      } catch (err) {
+        results.push({
+          exchange: ex,
+          isTestnet,
+          error: err.message
+        });
+      }
+    }
+
+    res.json({ wallets: results });
   } catch (error) {
     console.error('Get wallet error:', error);
     res.status(500).json({ message: error.message || 'サーバーエラーが発生しました' });
@@ -117,28 +204,67 @@ router.get('/wallet', auth, async (req, res) => {
 // 現在のポジション取得
 router.get('/positions', auth, async (req, res) => {
   try {
-    const client = await getBybitClient(req.user._id);
-    const response = await client.getPositions();
+    const { exchange } = req.query;
+    
+    // 特定取引所のポジション
+    if (exchange) {
+      const { client, exchange: ex, isTestnet } = await getExchangeClient(req.user._id, exchange);
+      const response = await client.getPositions();
 
-    if (response.retCode !== 0) {
-      return res.status(400).json({ message: response.retMsg });
+      if (response.retCode !== 0) {
+        return res.status(400).json({ message: response.retMsg });
+      }
+
+      const positions = (response.result?.list || [])
+        .filter(p => parseFloat(p.size) > 0)
+        .map(p => ({
+          symbol: p.symbol,
+          side: p.side,
+          size: parseFloat(p.size),
+          entryPrice: parseFloat(p.avgPrice || p.entryPrice),
+          markPrice: parseFloat(p.markPrice),
+          leverage: parseFloat(p.leverage),
+          unrealizedPnl: parseFloat(p.unrealisedPnl || p.unrealizedPnl),
+          liquidationPrice: parseFloat(p.liqPrice || p.liquidationPrice),
+          positionValue: parseFloat(p.positionValue || p.notional)
+        }));
+
+      return res.json({ 
+        exchange: ex,
+        isTestnet,
+        positions 
+      });
     }
 
-    const positions = (response.result?.list || [])
-      .filter(p => parseFloat(p.size) > 0)
-      .map(p => ({
-        symbol: p.symbol,
-        side: p.side,
-        size: parseFloat(p.size),
-        entryPrice: parseFloat(p.avgPrice),
-        markPrice: parseFloat(p.markPrice),
-        leverage: parseFloat(p.leverage),
-        unrealizedPnl: parseFloat(p.unrealisedPnl),
-        liquidationPrice: parseFloat(p.liqPrice),
-        positionValue: parseFloat(p.positionValue)
-      }));
+    // 全取引所のポジション
+    const clients = await getAllExchangeClients(req.user._id);
+    const results = [];
 
-    res.json({ positions });
+    for (const { client, exchange: ex, isTestnet } of clients) {
+      try {
+        const response = await client.getPositions();
+        if (response.retCode === 0) {
+          const positions = (response.result?.list || [])
+            .filter(p => parseFloat(p.size) > 0)
+            .map(p => ({
+              symbol: p.symbol,
+              side: p.side,
+              size: parseFloat(p.size),
+              entryPrice: parseFloat(p.avgPrice || p.entryPrice),
+              markPrice: parseFloat(p.markPrice),
+              leverage: parseFloat(p.leverage),
+              unrealizedPnl: parseFloat(p.unrealisedPnl || p.unrealizedPnl),
+              liquidationPrice: parseFloat(p.liqPrice || p.liquidationPrice),
+              positionValue: parseFloat(p.positionValue || p.notional)
+            }));
+          results.push({ exchange: ex, isTestnet, positions });
+        }
+      } catch (err) {
+        results.push({ exchange: ex, isTestnet, error: err.message });
+      }
+    }
+
+    res.json({ positions: results });
   } catch (error) {
     console.error('Get positions error:', error);
     res.status(500).json({ message: error.message || 'サーバーエラーが発生しました' });
@@ -148,9 +274,13 @@ router.get('/positions', auth, async (req, res) => {
 // 全ポジション決済
 router.post('/close-all', auth, async (req, res) => {
   try {
-    const { symbol } = req.body;
-    const client = await getBybitClient(req.user._id);
-
+    const { symbol, exchange } = req.body;
+    
+    if (!exchange) {
+      return res.status(400).json({ message: '取引所を指定してください' });
+    }
+    
+    const { client, exchange: ex } = await getExchangeClient(req.user._id, exchange);
     const results = await client.closeAllPositions(symbol);
 
     // 決済履歴記録
@@ -158,6 +288,7 @@ router.post('/close-all', auth, async (req, res) => {
       if (result.retCode === 0) {
         await TradeHistory.create({
           userId: req.user._id,
+          exchange: ex,
           symbol: symbol || 'ALL',
           side: 'Close',
           orderType: 'Market',
@@ -175,11 +306,12 @@ router.post('/close-all', auth, async (req, res) => {
       userId: req.user._id,
       type: 'info',
       category: 'trade',
-      message: `All positions closed${symbol ? ` for ${symbol}` : ''}`
+      message: `All positions closed on ${ex}${symbol ? ` for ${symbol}` : ''}`
     });
 
     res.json({
       message: 'ポジションを決済しました',
+      exchange: ex,
       results
     });
   } catch (error) {
@@ -321,9 +453,14 @@ router.get('/export-csv', auth, async (req, res) => {
 router.get('/funding-rate/:symbol', auth, async (req, res) => {
   try {
     const { symbol } = req.params;
-    const client = await getBybitClient(req.user._id);
-
-    const response = await client.getCurrentFundingRate(symbol);
+    const { exchange } = req.query;
+    
+    if (!exchange) {
+      return res.status(400).json({ message: '取引所を指定してください' });
+    }
+    
+    const { client, exchange: ex } = await getExchangeClient(req.user._id, exchange);
+    const response = await client.getFundingRate(symbol);
 
     if (response.retCode !== 0) {
       return res.status(400).json({ message: response.retMsg });
@@ -331,6 +468,7 @@ router.get('/funding-rate/:symbol', auth, async (req, res) => {
 
     const ticker = response.result?.list?.[0];
     res.json({
+      exchange: ex,
       symbol: ticker?.symbol,
       fundingRate: parseFloat(ticker?.fundingRate || 0),
       nextFundingTime: ticker?.nextFundingTime

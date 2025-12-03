@@ -1,24 +1,25 @@
-# Bybit 自動取引システム (AutoTrader)
+# マルチ取引所 自動取引システム (AutoTrader)
 
-Bybitのインバース無期限契約（Inverse Perpetual）を利用した、レバレッジ1倍の自動取引資産運用システムです。
+複数の暗号資産取引所（Bybit, Binance, OKX, Gate.io, Aster, Hyperliquid, EdgeX）に対応した、レバレッジ1倍の自動取引資産運用システムです。
 
 ---
 
 ## 📋 目次
 
 1. [システム概要](#システム概要)
-2. [主な機能](#主な機能)
-3. [システム要件](#システム要件)
-4. [インストール手順](#インストール手順)
-5. [環境設定](#環境設定)
-6. [ライセンス管理システム](#ライセンス管理システム)
-7. [起動方法](#起動方法)
-8. [使い方](#使い方)
-9. [APIエンドポイント](#apiエンドポイント)
-10. [データベース設計](#データベース設計)
-11. [自動取引ロジック](#自動取引ロジック)
-12. [セキュリティ](#セキュリティ)
-13. [トラブルシューティング](#トラブルシューティング)
+2. [対応取引所](#対応取引所)
+3. [主な機能](#主な機能)
+4. [システム要件](#システム要件)
+5. [インストール手順](#インストール手順)
+6. [環境設定](#環境設定)
+7. [ライセンス管理システム](#ライセンス管理システム)
+8. [起動方法](#起動方法)
+9. [使い方](#使い方)
+10. [APIエンドポイント](#apiエンドポイント)
+11. [データベース設計](#データベース設計)
+12. [自動取引ロジック](#自動取引ロジック)
+13. [セキュリティ](#セキュリティ)
+14. [トラブルシューティング](#トラブルシューティング)
 
 ---
 
@@ -26,13 +27,14 @@ Bybitのインバース無期限契約（Inverse Perpetual）を利用した、�
 
 ### コンセプト
 
-本システムは、Bybitの**ファンディングレート（資金調達率）**を活用した自動取引システムです。ファンディングレートの支払い時刻（9:00, 17:00, 1:00 JST）に合わせて自動的にポジションを調整し、安定した資産運用を目指します。
+本システムは、複数の暗号資産取引所の**ファンディングレート（資金調達率）**を活用した自動取引システムです。ファンディングレートの支払い時刻に合わせて自動的にポジションを調整し、安定した資産運用を目指します。
 
 ### 特徴
 
+- **マルチ取引所対応**: Bybit, Binance, OKX, Gate.io, Aster, Hyperliquid, EdgeX
 - **レバレッジ1倍固定**: リスクを最小限に抑えた安全な運用
 - **複利運用対応**: 利益を自動的に再投資
-- **マルチ通貨対応**: BTC, ETH, XRP, EOS, DOTなど複数通貨に対応
+- **マルチ通貨対応**: 各取引所で複数通貨に対応
 - **ユーザー管理**: 複数ユーザーの同時運用が可能
 - **管理者機能**: システム全体の監視・制御
 - **ライセンス認証**: Google スプレッドシート連携による購入者管理
@@ -49,6 +51,44 @@ Bybitのインバース無期限契約（Inverse Perpetual）を利用した、�
 | スケジューラー | node-cron |
 | チャート | Chart.js, react-chartjs-2 |
 | API通信 | Axios |
+
+---
+
+## 対応取引所
+
+### 実装済み（CEX）
+
+| 取引所 | タイプ | テストネット | 特記事項 |
+|--------|--------|-------------|---------|
+| **Bybit** | CEX | ✅ | インバース無期限契約 |
+| **Binance** | CEX | ✅ | USDS-M Futures |
+
+### 実装予定（CEX）
+
+| 取引所 | タイプ | テストネット | 特記事項 |
+|--------|--------|-------------|---------|
+| **OKX** | CEX | ✅ | パスフレーズ認証が必要 |
+| **Gate.io** | CEX | ✅ | USDT Perpetual |
+
+### 実装予定（DEX）
+
+| 取引所 | タイプ | テストネット | 特記事項 |
+|--------|--------|-------------|---------|
+| **Aster DEX** | DEX | ❌ | Web3署名（ウォレットアドレス必要） |
+| **Hyperliquid** | DEX | ✅ | L1 DEX、Web3署名 |
+| **EdgeX** | DEX | ✅ | StarkEx L2、Web3署名 |
+
+### 取引所別API認証方式
+
+| 取引所 | 認証方式 | 必要な認証情報 |
+|--------|---------|---------------|
+| Bybit | HMAC-SHA256 | API Key + API Secret |
+| Binance | HMAC-SHA256 | API Key + API Secret |
+| OKX | HMAC-SHA256 | API Key + API Secret + Passphrase |
+| Gate.io | HMAC-SHA512 | API Key + API Secret |
+| Aster | HMAC/Web3 | API Key + API Secret + Wallet Address |
+| Hyperliquid | Web3署名 | API Key + API Secret + Wallet Address |
+| EdgeX | Web3署名 | API Key + API Secret + Wallet Address |
 
 ---
 
@@ -397,7 +437,9 @@ db.users.updateOne(
 
 ### APIキーの設定
 
-#### Bybit APIキーの取得
+#### 取引所別APIキー取得方法
+
+##### Bybit
 
 1. [Bybit](https://www.bybit.com)にログイン
 2. 「API管理」→「新しいキーを作成」
@@ -407,20 +449,55 @@ db.users.updateOne(
    - **出金**: **無効**（セキュリティのため）
 4. IP制限を設定（推奨）
 
+##### Binance
+
+1. [Binance](https://www.binance.com)にログイン
+2. 「API管理」→「APIの作成」
+3. 「システム生成」を選択
+4. 以下の権限を設定:
+   - **先物取引を有効にする**: 有効
+   - **出金を有効にする**: **無効**
+5. IP制限を設定（推奨）
+
+##### OKX（準備中）
+
+1. [OKX](https://www.okx.com)にログイン
+2. 「API」→「APIを作成」
+3. **パスフレーズを設定**（必須）
+4. 以下の権限を設定:
+   - **取引**: 有効
+   - **出金**: **無効**
+
 #### システムへのAPIキー登録
 
-1. ダッシュボードの「APIキー設定」セクションへ
-2. 「API Key」と「API Secret」を入力
-3. 「保存」をクリック
-4. APIキーは暗号化されて保存されます
+1. ダッシュボードの「アカウント」→「API設定」タブへ
+2. 取引所を選択
+3. 「API Key」と「API Secret」を入力
+4. OKXの場合は「パスフレーズ」も入力
+5. DEXの場合は「ウォレットアドレス」も入力
+6. テストネットを使用する場合はチェックを入れる
+7. 「登録」をクリック
+8. APIキーは暗号化されて保存されます
 
 ### 取引設定
+
+#### 取引所の追加
+
+1. サイドメニューから「アカウント」を選択
+2. 「API設定」タブを開く
+3. 取引所を選択してAPIキーを登録
+4. 複数の取引所を同時に登録可能
 
 #### 通貨の選択
 
 1. サイドメニューから「通貨設定」を選択
 2. 取引したい通貨をONに切り替え
-3. 対応通貨: BTC, ETH, XRP, EOS, DOT
+3. 取引所ごとに対応通貨が異なります
+
+| 取引所 | 対応通貨 |
+|--------|---------|
+| Bybit | BTC, ETH, XRP, EOS |
+| Binance | BTC, ETH, BNB, XRP, SOL |
 
 #### 複利設定
 
@@ -438,24 +515,34 @@ db.users.updateOne(
 
 ### ダッシュボードの見方
 
-#### 残高カード
+#### 取引所フィルター
+
+ダッシュボード右上のドロップダウンで表示する取引所を選択できます：
+- **全取引所**: すべての登録済み取引所を表示
+- **個別取引所**: 特定の取引所のみ表示
+
+#### 残高カード（取引所別）
 
 | 項目 | 説明 |
 |------|------|
-| 総残高 | ウォレット内の総資産（BTC換算） |
+| 取引所名 | Bybit, Binance等 |
+| 環境 | テストネット/本番環境 |
+| 総残高 | ウォレット内の総資産 |
 | 利用可能残高 | 取引に使用可能な残高 |
 | 未実現損益 | 現在のポジションの含み損益 |
 
-#### ポジション一覧
+#### ポジション一覧（取引所別）
 
 | 項目 | 説明 |
 |------|------|
+| 取引所 | ポジションを保有している取引所 |
 | 通貨 | 取引通貨ペア |
 | 方向 | Long（買い）/ Short（売り） |
 | サイズ | ポジションサイズ |
 | 参入価格 | ポジションを建てた価格 |
 | 現在価格 | 現在の市場価格 |
 | 未実現P&L | 含み損益 |
+| 全決済 | 取引所ごとに全ポジション決済可能 |
 
 #### 最近の取引
 
@@ -504,22 +591,28 @@ db.users.updateOne(
 
 | メソッド | パス | 説明 | 認証 |
 |---------|------|------|------|
-| GET | `/` | APIキー存在確認 | 必要 |
-| POST | `/` | APIキー保存 | 必要 |
-| DELETE | `/` | APIキー削除 | 必要 |
-| POST | `/verify` | APIキー検証 | 必要 |
+| GET | `/` | 全取引所のAPIキー情報取得 | 必要 |
+| GET | `/exchanges` | サポート取引所一覧 | 必要 |
+| GET | `/:exchange` | 特定取引所のAPIキー情報 | 必要 |
+| POST | `/` | APIキー保存（取引所指定） | 必要 |
+| DELETE | `/` | 全APIキー削除 | 必要 |
+| DELETE | `/:exchange` | 特定取引所のAPIキー削除 | 必要 |
+| POST | `/validate` | APIキー検証 | 必要 |
 
 ### 取引 API (`/api/trading`)
 
 | メソッド | パス | 説明 | 認証 |
 |---------|------|------|------|
-| GET | `/dashboard` | ダッシュボードデータ | 必要 |
-| GET | `/positions` | ポジション一覧 | 必要 |
-| POST | `/close-all` | 全ポジションクローズ | 必要 |
-| GET | `/funding-rate/:symbol` | ファンディングレート取得 | 必要 |
+| GET | `/wallet` | 全取引所のウォレット残高 | 必要 |
+| GET | `/wallet?exchange=xxx` | 特定取引所のウォレット残高 | 必要 |
+| GET | `/positions` | 全取引所のポジション一覧 | 必要 |
+| GET | `/positions?exchange=xxx` | 特定取引所のポジション一覧 | 必要 |
+| POST | `/close-all` | 全ポジションクローズ（取引所指定可） | 必要 |
+| GET | `/funding-rate/:symbol?exchange=xxx` | ファンディングレート取得 | 必要 |
 | GET | `/history` | 取引履歴 | 必要 |
 | GET | `/asset-history` | 資産履歴 | 必要 |
 | GET | `/currencies` | 通貨設定取得 | 必要 |
+| GET | `/currencies?exchange=xxx` | 取引所別通貨設定取得 | 必要 |
 | PUT | `/currencies` | 通貨設定更新 | 必要 |
 
 ### 管理者 API (`/api/admin`)
@@ -636,9 +729,14 @@ autotrader/
 {
   _id: ObjectId,
   userId: ObjectId,        // 参照: Users
+  exchange: String,        // "bybit" | "binance" | "okx" | "gateio" | "aster" | "hyperliquid" | "edgex"
   apiKey: String,          // AES暗号化されたAPIキー
   apiSecret: String,       // AES暗号化されたAPIシークレット
+  passphrase: String,      // AES暗号化されたパスフレーズ（OKX用）
+  walletAddress: String,   // AES暗号化されたウォレットアドレス（DEX用）
   isTestnet: Boolean,      // テストネットフラグ
+  isValid: Boolean,        // APIキー有効フラグ
+  lastValidated: Date,     // 最終検証日時
   createdAt: Date,
   updatedAt: Date
 }
@@ -650,13 +748,14 @@ autotrader/
 {
   _id: ObjectId,
   userId: ObjectId,
-  symbol: String,          // "BTCUSD", "ETHUSD"など
-  side: String,            // "Buy" | "Sell"
+  exchange: String,        // "bybit" | "binance" | etc.
+  symbol: String,          // "BTCUSD", "BTCUSDT"など
+  side: String,            // "Buy" | "Sell" | "Close"
   orderType: String,       // "Market" | "Limit"
   qty: String,             // 数量
   price: String,           // 約定価格
   executedAt: Date,        // 約定日時
-  orderId: String,         // Bybit注文ID
+  orderId: String,         // 取引所注文ID
   pnl: Number,             // 実現損益
   fee: Number,             // 手数料
   fundingRate: Number,     // ファンディングレート
@@ -907,7 +1006,7 @@ AutoTrader/
 │   ├── models/
 │   │   ├── index.js          # モデルエクスポート
 │   │   ├── User.js           # ユーザーモデル
-│   │   ├── ApiKey.js         # APIキーモデル
+│   │   ├── ApiKey.js         # APIキーモデル（マルチ取引所対応）
 │   │   ├── TradeHistory.js   # 取引履歴モデル
 │   │   ├── AssetHistory.js   # 資産履歴モデル
 │   │   ├── Position.js       # ポジションモデル
@@ -915,13 +1014,15 @@ AutoTrader/
 │   │   └── SystemSettings.js # システム設定モデル
 │   ├── services/
 │   │   ├── bybitClient.js    # Bybit APIクライアント
+│   │   ├── binanceClient.js  # Binance Futures APIクライアント
+│   │   ├── exchangeFactory.js # 取引所クライアントファクトリー
 │   │   └── tradingScheduler.js # 自動取引スケジューラー
 │   ├── middleware/
 │   │   └── auth.js           # 認証ミドルウェア
 │   └── routes/
 │       ├── auth.js           # 認証ルート
-│       ├── apikey.js         # APIキールート
-│       ├── trading.js        # 取引ルート
+│       ├── apikey.js         # APIキールート（マルチ取引所対応）
+│       ├── trading.js        # 取引ルート（マルチ取引所対応）
 │       └── admin.js          # 管理者ルート
 │
 └── client/
@@ -945,7 +1046,7 @@ AutoTrader/
             ├── Login.js      # ログインページ
             ├── Register.js   # 登録ページ
             ├── Auth.css
-            ├── Dashboard.js  # ダッシュボード
+            ├── Dashboard.js  # ダッシュボード（マルチ取引所対応）
             ├── Dashboard.css
             ├── TradeHistory.js # 取引履歴
             ├── TradeHistory.css
@@ -953,7 +1054,7 @@ AutoTrader/
             ├── AssetHistory.css
             ├── Currencies.js # 通貨設定
             ├── Currencies.css
-            ├── Account.js    # アカウント設定
+            ├── Account.js    # アカウント設定（マルチ取引所対応）
             ├── Account.css
             └── admin/
                 ├── AdminDashboard.js  # 管理者ダッシュボード
@@ -988,8 +1089,9 @@ MIT License
 
 | バージョン | 日付 | 変更内容 |
 |-----------|------|----------|
-| 1.0.0 | 2024-XX-XX | 初回リリース |
-
+| 1.0.0 | 2024-12-01 | 初回リリース（Bybit対応） |
+| 1.1.0 | 2024-12-02 | ライセンスシステム対応 |
+| 2.0.0 | 2024-12-02 | マルチ取引所対応（Binance追加） |
 ---
 
 **⚠️ 免責事項**: 本システムは投資助言を目的としたものではありません。暗号資産取引には大きなリスクが伴います。投資判断は自己責任で行ってください。

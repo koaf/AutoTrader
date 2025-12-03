@@ -19,6 +19,22 @@
 .header-actions {
   display: flex;
   gap: 12px;
+  align-items: center;
+}
+
+.exchange-filter {
+  padding: 10px 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  color: var(--text-primary);
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+
+.exchange-filter:focus {
+  outline: none;
+  border-color: var(--primary-color);
 }
 
 .trading-toggle {
@@ -112,6 +128,63 @@
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 16px;
+}
+
+/* Exchange Wallet Section */
+.exchange-wallet-section {
+  margin-bottom: 24px;
+}
+
+.exchange-wallet-section:last-child {
+  margin-bottom: 0;
+}
+
+.exchange-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  padding: 12px 16px;
+  background: var(--bg-secondary);
+  border-radius: 8px;
+}
+
+.exchange-header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.exchange-name {
+  font-weight: 600;
+  font-size: 1.1rem;
+  color: var(--text-primary);
+}
+
+.testnet-badge {
+  padding: 4px 10px;
+  background: rgba(247, 147, 26, 0.2);
+  color: var(--primary-color);
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.error-badge {
+  padding: 4px 10px;
+  background: rgba(231, 76, 60, 0.2);
+  color: var(--danger-color);
+  border-radius: 12px;
+  font-size: 0.75rem;
+}
+
+/* Exchange Positions Section */
+.exchange-positions-section {
+  margin-bottom: 24px;
+}
+
+.exchange-positions-section:last-child {
+  margin-bottom: 0;
 }
 
 .wallet-card {

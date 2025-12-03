@@ -6,13 +6,18 @@ const tradeHistorySchema = new mongoose.Schema({
     ref: 'User',
     required: true
   },
+  exchange: {
+    type: String,
+    enum: ['bybit', 'binance', 'okx', 'gateio', 'aster', 'hyperliquid', 'edgex'],
+    default: 'bybit'
+  },
   symbol: {
     type: String,
     required: true
   },
   side: {
     type: String,
-    enum: ['Buy', 'Sell'],
+    enum: ['Buy', 'Sell', 'Close'],
     required: true
   },
   orderType: {
@@ -69,5 +74,6 @@ const tradeHistorySchema = new mongoose.Schema({
 // インデックス
 tradeHistorySchema.index({ userId: 1, executedAt: -1 });
 tradeHistorySchema.index({ userId: 1, symbol: 1 });
+tradeHistorySchema.index({ userId: 1, exchange: 1 });
 
 module.exports = mongoose.model('TradeHistory', tradeHistorySchema);

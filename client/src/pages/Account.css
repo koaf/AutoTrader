@@ -260,3 +260,133 @@
   color: var(--text-secondary);
   margin-bottom: 0;
 }
+
+/* 登録済みAPIキー一覧 */
+.registered-apikeys {
+  margin-bottom: 30px;
+}
+
+.registered-apikeys h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 16px;
+  color: var(--text-primary);
+}
+
+.apikey-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.apikey-card {
+  background: var(--bg-secondary);
+  border-radius: 10px;
+  padding: 16px;
+  border: 1px solid var(--border-color);
+}
+
+.apikey-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.exchange-name {
+  font-weight: 600;
+  font-size: 1.05rem;
+  color: var(--text-primary);
+}
+
+.status-badge {
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.status-badge.valid {
+  background: rgba(0, 200, 81, 0.2);
+  color: var(--secondary-color);
+}
+
+.status-badge.invalid {
+  background: rgba(231, 76, 60, 0.2);
+  color: var(--danger-color);
+}
+
+.apikey-body {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 12px;
+  font-size: 0.85rem;
+}
+
+.env-badge {
+  padding: 3px 8px;
+  background: var(--bg-card);
+  border-radius: 4px;
+  color: var(--text-secondary);
+}
+
+.apikey-body .date {
+  color: var(--text-secondary);
+}
+
+.apikey-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.apikey-actions .validate-btn,
+.apikey-actions .delete-btn {
+  flex: 1;
+  padding: 8px 12px;
+  font-size: 0.85rem;
+}
+
+/* 新規登録セクション */
+.new-apikey-section {
+  padding-top: 20px;
+  border-top: 1px solid var(--border-color);
+}
+
+.new-apikey-section h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 20px;
+  color: var(--text-primary);
+}
+
+/* セレクトボックス */
+.form-group select {
+  width: 100%;
+  padding: 12px 16px;
+  background: var(--bg-input);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  color: var(--text-primary);
+  font-size: 1rem;
+  transition: border-color 0.2s;
+  cursor: pointer;
+}
+
+.form-group select:focus {
+  outline: none;
+  border-color: var(--primary-color);
+}
+
+/* 注意事項 */
+.form-notice {
+  background: var(--bg-secondary);
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin: 20px 0;
+}
+
+.form-notice p {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin: 4px 0;
+}

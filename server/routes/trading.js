@@ -33,6 +33,13 @@ const AVAILABLE_CURRENCIES = {
     { symbol: 'SOL', name: 'Solana', tradingSymbol: 'SOL_USDT' },
     { symbol: 'XRP', name: 'Ripple', tradingSymbol: 'XRP_USDT' },
     { symbol: 'DOGE', name: 'Dogecoin', tradingSymbol: 'DOGE_USDT' }
+  ],
+  aster: [
+    { symbol: 'BTC', name: 'Bitcoin', tradingSymbol: 'BTCUSDT' },
+    { symbol: 'ETH', name: 'Ethereum', tradingSymbol: 'ETHUSDT' },
+    { symbol: 'SOL', name: 'Solana', tradingSymbol: 'SOLUSDT' },
+    { symbol: 'ARB', name: 'Arbitrum', tradingSymbol: 'ARBUSDT' },
+    { symbol: 'DOGE', name: 'Dogecoin', tradingSymbol: 'DOGEUSDT' }
   ]
 };
 

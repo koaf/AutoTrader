@@ -7,8 +7,8 @@ const BybitClient = require('./bybitClient');
 const BinanceClient = require('./binanceClient');
 const OkxClient = require('./okxClient');
 const GateioClient = require('./gateioClient');
+const AsterClient = require('./asterClient');
 // 将来追加予定
-// const AsterClient = require('./asterClient');
 // const HyperliquidClient = require('./hyperliquidClient');
 // const EdgexClient = require('./edgexClient');
 
@@ -52,12 +52,12 @@ const EXCHANGE_CONFIG = {
   },
   aster: {
     name: 'Aster DEX',
-    client: null, // 未実装
+    client: AsterClient,
     hasTestnet: false,
     needsPassphrase: false,
-    needsWalletAddress: true,
+    needsWalletAddress: false,
     category: 'dex',
-    description: 'Aster DEX (Web3署名)'
+    description: 'Aster DEX USDT-M Perpetual'
   },
   hyperliquid: {
     name: 'Hyperliquid',
@@ -119,8 +119,7 @@ class ExchangeFactory {
         return new GateioClient(apiKey, apiSecret, isTestnet);
       
       case 'aster':
-        // return new AsterClient(apiKey, apiSecret, walletAddress);
-        throw new Error('Aster client not implemented yet');
+        return new AsterClient(apiKey, apiSecret, isTestnet);
       
       case 'hyperliquid':
         // return new HyperliquidClient(apiKey, apiSecret, walletAddress, isTestnet);

@@ -40,6 +40,24 @@ const AVAILABLE_CURRENCIES = {
     { symbol: 'SOL', name: 'Solana', tradingSymbol: 'SOLUSDT' },
     { symbol: 'ARB', name: 'Arbitrum', tradingSymbol: 'ARBUSDT' },
     { symbol: 'DOGE', name: 'Dogecoin', tradingSymbol: 'DOGEUSDT' }
+  ],
+  hyperliquid: [
+    { symbol: 'BTC', name: 'Bitcoin', tradingSymbol: 'BTC' },
+    { symbol: 'ETH', name: 'Ethereum', tradingSymbol: 'ETH' },
+    { symbol: 'SOL', name: 'Solana', tradingSymbol: 'SOL' },
+    { symbol: 'ARB', name: 'Arbitrum', tradingSymbol: 'ARB' },
+    { symbol: 'DOGE', name: 'Dogecoin', tradingSymbol: 'DOGE' },
+    { symbol: 'AVAX', name: 'Avalanche', tradingSymbol: 'AVAX' },
+    { symbol: 'MATIC', name: 'Polygon', tradingSymbol: 'MATIC' },
+    { symbol: 'OP', name: 'Optimism', tradingSymbol: 'OP' }
+  ],
+  edgex: [
+    { symbol: 'BTC', name: 'Bitcoin', tradingSymbol: 'BTC-USDC-PERP' },
+    { symbol: 'ETH', name: 'Ethereum', tradingSymbol: 'ETH-USDC-PERP' },
+    { symbol: 'SOL', name: 'Solana', tradingSymbol: 'SOL-USDC-PERP' },
+    { symbol: 'ARB', name: 'Arbitrum', tradingSymbol: 'ARB-USDC-PERP' },
+    { symbol: 'AVAX', name: 'Avalanche', tradingSymbol: 'AVAX-USDC-PERP' },
+    { symbol: 'OP', name: 'Optimism', tradingSymbol: 'OP-USDC-PERP' }
   ]
 };
 

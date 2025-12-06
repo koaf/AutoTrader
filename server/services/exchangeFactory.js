@@ -8,9 +8,8 @@ const BinanceClient = require('./binanceClient');
 const OkxClient = require('./okxClient');
 const GateioClient = require('./gateioClient');
 const AsterClient = require('./asterClient');
-// 将来追加予定
-// const HyperliquidClient = require('./hyperliquidClient');
-// const EdgexClient = require('./edgexClient');
+const HyperliquidClient = require('./hyperliquidClient');
+const EdgexClient = require('./edgexClient');
 
 // サポートする取引所の設定
 const EXCHANGE_CONFIG = {
@@ -61,21 +60,21 @@ const EXCHANGE_CONFIG = {
   },
   hyperliquid: {
     name: 'Hyperliquid',
-    client: null, // 未実装
+    client: HyperliquidClient,
     hasTestnet: true,
     needsPassphrase: false,
     needsWalletAddress: true,
     category: 'dex',
-    description: 'Hyperliquid L1 DEX'
+    description: 'Hyperliquid L1 DEX (USDC Perpetual)'
   },
   edgex: {
     name: 'EdgeX',
-    client: null, // 未実装
+    client: EdgexClient,
     hasTestnet: true,
     needsPassphrase: false,
-    needsWalletAddress: true,
+    needsWalletAddress: false,
     category: 'dex',
-    description: 'EdgeX StarkEx L2'
+    description: 'EdgeX StarkEx L2 (USDC Perpetual)'
   }
 };
 
@@ -122,12 +121,11 @@ class ExchangeFactory {
         return new AsterClient(apiKey, apiSecret, isTestnet);
       
       case 'hyperliquid':
-        // return new HyperliquidClient(apiKey, apiSecret, walletAddress, isTestnet);
-        throw new Error('Hyperliquid client not implemented yet');
+        // Hyperliquid: apiKey = wallet address, apiSecret = private key
+        return new HyperliquidClient(apiKey, apiSecret, isTestnet);
       
       case 'edgex':
-        // return new EdgexClient(apiKey, apiSecret, walletAddress, isTestnet);
-        throw new Error('EdgeX client not implemented yet');
+        return new EdgexClient(apiKey, apiSecret, isTestnet);
       
       default:
         throw new Error(`Unknown exchange: ${exchange}`);

@@ -1,3 +1,4 @@
+const path = require('path');
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
@@ -26,6 +27,18 @@ app.use('/api/admin', adminRoutes);
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
+
+// クライアント静的ファイルを提供（環境変数で制御）
+if (process.env.SERVE_STATIC === 'true') {
+  const buildPath = process.env.CLIENT_BUILD_PATH
+    ? path.resolve(process.env.CLIENT_BUILD_PATH)
+    : path.resolve(__dirname, '..', 'client', 'build');
+
+  app.use(express.static(buildPath));
+  app.get(/^\/(?!api).*/, (req, res) => {
+    res.sendFile(path.join(buildPath, 'index.html'));
+  });
+}
 
 // エラーハンドリング
 app.use((err, req, res, next) => {

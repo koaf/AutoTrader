@@ -1,15 +1,21 @@
 {
-  "name": "bybit-auto-trader",
-  "version": "1.0.0",
-  "description": "Bybit自動取引システム - インバース無期限契約対応",
+  "name": "autotrader",
+  "version": "2.5.0",
+  "description": "Multi-exchange cryptocurrency trading platform",
   "main": "server/index.js",
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  },
   "scripts": {
     "start": "node server/index.js",
     "dev": "concurrently \"npm run server\" \"npm run client\"",
     "server": "nodemon server/index.js",
     "client": "cd client && npm start",
     "install-all": "npm install && cd client && npm install",
-    "build": "cd client && npm run build"
+    "build": "cd client && npm run build",
+    "render-setup": "chmod +x render-setup.sh && ./render-setup.sh",
+    "render-start": "chmod +x render-launch.sh && ./render-launch.sh"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

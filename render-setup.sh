@@ -91,7 +91,19 @@ echo -e "${BLUE}[3/5] サーバー依存関係をインストール中...${NC}"
 
 if [ -d "server" ]; then
     cd server
-    npm ci --production
+    
+    # package-lock.jsonが存在し、同期が取れている場合はnpm ci、それ以外はnpm install
+    if [ -f "package-lock.json" ]; then
+        echo "  package-lock.json検出: npm ciを試行中..."
+        npm ci --production 2>/dev/null || {
+            echo -e "${YELLOW}  npm ci失敗: npm installにフォールバック${NC}"
+            npm install --production
+        }
+    else
+        echo "  package-lock.json未検出: npm installを実行中..."
+        npm install --production
+    fi
+    
     cd ..
     echo -e "${GREEN}✓ サーバー依存関係インストール完了${NC}"
 else
@@ -118,7 +130,18 @@ if [ -d "client" ]; then
         echo -e "${YELLOW}⚠ RENDER_EXTERNAL_URLが未設定。相対パスを使用${NC}"
     fi
     
-    npm ci
+    # package-lock.jsonの同期チェック
+    if [ -f "package-lock.json" ]; then
+        echo "  package-lock.json検出: npm ciを試行中..."
+        npm ci 2>/dev/null || {
+            echo -e "${YELLOW}  npm ci失敗: npm installにフォールバック${NC}"
+            npm install
+        }
+    else
+        echo "  package-lock.json未検出: npm installを実行中..."
+        npm install
+    fi
+    
     npm run build
     cd ..
     echo -e "${GREEN}✓ クライアントビルド完了${NC}"

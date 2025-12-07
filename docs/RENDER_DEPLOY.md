@@ -119,6 +119,32 @@ Renderダッシュボードの **Logs** タブでサーバーログを確認で�
 
 ## 🔧 トラブルシューティング
 
+### package-lock.json 不整合エラー
+
+**エラー:** `npm ci can only install packages when your package.json and package-lock.json are in sync`
+
+✅ 解決策：
+1. ローカルで依存関係を更新：
+```bash
+cd server
+npm install
+cd ../client
+npm install
+```
+
+2. 更新された`package-lock.json`をコミット：
+```bash
+git add server/package-lock.json client/package-lock.json
+git commit -m "Update package-lock.json"
+git push
+```
+
+3. Renderで再デプロイ
+
+> **注意:** `render-setup.sh`は自動的に`npm ci`が失敗した場合`npm install`にフォールバックします。
+
+---
+
 ### ビルドエラー
 
 **エラー:** `npm: command not found`

@@ -130,19 +130,24 @@ if [ -d "client" ]; then
         echo -e "${YELLOW}⚠ RENDER_EXTERNAL_URLが未設定。相対パスを使用${NC}"
     fi
     
-    # package-lock.jsonの同期チェック
-    if [ -f "package-lock.json" ]; then
-        echo "  package-lock.json検出: npm ciを試行中..."
-        npm ci 2>/dev/null || {
-            echo -e "${YELLOW}  npm ci失敗: npm installにフォールバック${NC}"
-            npm install
-        }
-    else
-        echo "  package-lock.json未検出: npm installを実行中..."
-        npm install
+    # node_modulesをクリーンアップ（パーミッションエラー対策）
+    if [ -d "node_modules" ]; then
+        echo "  既存のnode_modulesを削除中..."
+        rm -rf node_modules
     fi
     
+    # 依存関係の再インストール
+    echo "  依存関係をインストール中..."
+    npm install
+    
+    # ビルド実行前にreact-scriptsの実行権限を確認
+    if [ -f "node_modules/.bin/react-scripts" ]; then
+        chmod +x node_modules/.bin/react-scripts
+    fi
+    
+    echo "  ビルドを実行中..."
     npm run build
+    
     cd ..
     echo -e "${GREEN}✓ クライアントビルド完了${NC}"
 else

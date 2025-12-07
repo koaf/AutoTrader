@@ -145,6 +145,27 @@ git push
 
 ---
 
+### react-scripts パーミッションエラー
+
+**エラー:** `react-scripts: Permission denied`
+
+✅ 解決策（自動対応済み）:
+- `render-setup.sh`が自動的に以下を実行：
+  1. 既存の`node_modules`を削除
+  2. 依存関係を再インストール
+  3. `react-scripts`に実行権限を付与
+
+手動で修正する場合：
+```bash
+cd client
+rm -rf node_modules
+npm install
+chmod +x node_modules/.bin/react-scripts
+npm run build
+```
+
+---
+
 ### ビルドエラー
 
 **エラー:** `npm: command not found`

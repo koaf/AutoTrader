@@ -30,9 +30,15 @@ app.get('/api/health', (req, res) => {
 
 // クライアント静的ファイルを提供（環境変数で制御）
 if (process.env.SERVE_STATIC === 'true') {
-  const buildPath = process.env.CLIENT_BUILD_PATH
-    ? path.resolve(process.env.CLIENT_BUILD_PATH)
-    : path.resolve(__dirname, '..', 'client', 'build');
+  let buildPath;
+  if (process.env.CLIENT_BUILD_PATH) {
+    const providedPath = process.env.CLIENT_BUILD_PATH;
+    buildPath = path.isAbsolute(providedPath)
+      ? providedPath
+      : path.resolve(__dirname, providedPath);
+  } else {
+    buildPath = path.resolve(__dirname, '..', 'client', 'build');
+  }
 
   app.use(express.static(buildPath));
   app.get(/^\/(?!api).*/, (req, res) => {
